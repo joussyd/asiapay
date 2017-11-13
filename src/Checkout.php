@@ -12,6 +12,7 @@
  * @license  http://www.gnu.org/copyleft/gpl.html GNU General Public License
  */
 namespace Redscript\AsiaPay;
+use DOMDocument;
 
 /**
  * Factory Class
@@ -19,7 +20,7 @@ namespace Redscript\AsiaPay;
  * PHP version 7+
  *
  * @category Class
- * @author   Joussyd Calupig <joussydmcalupig@get_magic_quotes_gpc()l.com>
+ * @author   Joussyd Calupig <joussydmcalupig@gmail.com>
  * @license  http://www.gnu.org/copyleft/gpl.html GNU General Public License
  */
 class Checkout extends Factory
@@ -36,6 +37,20 @@ class Checkout extends Factory
     -------------------------------*/
     /* Protected Methods
     -------------------------------*/
+    protected $merchantId       = null;
+    protected $secureHashSecret = null;
+    protected $amount           = null;
+    protected $orderRef         = null;
+    protected $currCode         = null;
+    protected $mpsMode          = null;
+    protected $successUrl       = null;
+    protected $failedUrl        = null;
+    protected $cancelUrl        = null;
+    protected $paymentType      = 'N';
+    protected $languange        = 'E';
+    protected $live             = false;
+    protected $paymentMethod    = 'ALL';
+
     /* Public Methods
     -------------------------------*/
     /**
@@ -53,21 +68,120 @@ class Checkout extends Factory
     }
 
     /**
-     * Generate Form
+     * Generate Form for submittion of checkout details
      * 
-     * @param 
      *
-     * @return 
+     * @return html
      */
-    public function generateForm()
+    public function generateForm($useButton = false)
     {
-        echo $this->merchantId;
-        echo $this->merchantReference;
-        echo $this->currencyCode;
-        echo $this->amount;
-        echo $this->paymentMethod;
-        echo $this->secureHash;
-        exit;
+        // generate hash
+        $secureHash = $this->generateHash(
+                        $this->merchantId, $this->orderRef,
+                        $this->currCode, $this->amount,
+                        $this->paymentType, $this->secureHashSecret
+                    );
+
+        // get form values
+        $formValues = array(
+            'merchantId' => $this->merchantId,
+            'amount'     => $this->amount,
+            'orderRef'   => $this->orderRef,
+            'currCode'   => $this->currCode,
+            'mpsMode'    => $this->mpsMode,
+            'successUrl' => $this->successUrl,
+            'failUrl'    => $this->failUrl,
+            'cancelUrl'  => $this->cancelUrl,
+            'payType'    => $this->paymentType,
+            'lang'       => $this->languange,
+            'payMethod'  => $this->paymentMethod,
+            'secureHash' => $secureHash
+        );
+
+        // check if the transaction is for testing or production
+        if($this->live) {
+            // set form action to production url
+            $formAction = self::PROD_PAYMENT_URL;
+        }else {
+            // set form action to test url
+            $formAction = self::TEST_PAYMENT_URL;
+        }
+
+        // create DOM
+        $dom = new DOMDocument('1.0');
+        // create form
+        $form = $dom->createElement('form');
+
+        // create a name attribute for the form
+        $actionAttribute = $dom->createAttribute('action');
+        // set name attribute value
+        $actionAttribute->value = $formAction;
+
+        // create a name attribute for the form
+        $methodAttribute = $dom->createAttribute('method');
+        // set name attribute value
+        $methodAttribute->value = 'POST';
+
+        // append action attribute to the form
+        $form->appendChild($actionAttribute);
+        $form->appendChild($methodAttribute);
+
+        // loop through each key and value then create an input field
+        foreach ($formValues as $key => $value) {
+
+            // crete an input element
+            $input = $dom->createElement('input');
+            // create a name attribute
+
+            $nameAttribute = $dom->createAttribute('name');
+            // set name attribute value
+            $nameAttribute->value = $key;
+
+            // create a value attribute
+            $valueAttribute = $dom->createAttribute('value');
+            // set value attribute value
+            $valueAttribute->value = $value;
+
+            // create a value attribute
+            $typeAttribute = $dom->createAttribute('type');
+            // set value attribute value
+            $typeAttribute->value = 'hidden';
+
+            // append attributes in the input element
+            $input->appendChild($nameAttribute);
+            $input->appendChild($valueAttribute);
+            $input->appendChild($typeAttribute);
+
+            // append the input in the form
+            $form->appendChild($input);
+        }
+
+        if($useButton) {
+            // creqte submit button
+            $submit = $dom->createElement('input');
+            // create a name attribute
+
+            $nameAttribute = $dom->createAttribute('name');
+            // set name attribute value
+            $nameAttribute->value = 'submit';
+            // create a name attribute
+
+            $typeAttribute = $dom->createAttribute('type');
+            // set name attribute value
+            $typeAttribute->value = 'submit';
+
+            // append submit attributes
+            $submit->appendChild($nameAttribute);
+            $submit->appendChild($typeAttribute);
+
+            // append submit to the form
+            $form->appendChild($submit);
+        }
+
+        // append form in the created DOM
+        $dom->appendChild($form);
+
+        return $dom->saveHTML();
     }
 
     /* Protected Properties
@@ -77,9 +191,9 @@ class Checkout extends Factory
      *
      * @param float $amount The total amount you want to charge the customer
      *                      for the provided currency 
-     * @return 
+     * @return $this
      */
-    protected function setAmount($amount)
+    public function setAmount($amount)
     {
         $this->amount = $amount;
 
@@ -90,9 +204,9 @@ class Checkout extends Factory
      * Set Order Reference
      * 
      * @param string $orderRef Merchant‘s Order Reference Number
-     * @return 
+     * @return $this
      */
-    protected function setOrderReference($orderRef)
+    public function setOrderReference($orderRef)
     {
         $this->orderRef = $orderRef;
 
@@ -103,9 +217,9 @@ class Checkout extends Factory
      * Set Currency Code
      * 
      * @param int $currCode Transaction Currency
-     * @return 
+     * @return $this
      */
-    protected function setCurrencyCode($currCode)
+    public function setCurrencyCode($currCode)
     {
         $this->currCode = $currCode;
 
@@ -116,9 +230,9 @@ class Checkout extends Factory
      * Set Multi-Currency Processing Service Mode
      * 
      * @param string $mpsMode Transaction Currency
-     * @return 
+     * @return $this
      */
-    protected function setMpsMode($mpsMode)
+    public function setMpsMode($mpsMode)
     {
         $this->mpsMode = $mpsMode;
 
@@ -130,9 +244,9 @@ class Checkout extends Factory
      * 
      * @param string $successUrl  A Web page address to redirect upon 
      *                            the transaction being accepted by asiapay
-     * @return 
+     * @return $this
      */
-    protected function setSuccessUrl($successUrl)
+    public function setSuccessUrl($successUrl)
     {
         $this->successUrl = $successUrl;
 
@@ -144,9 +258,9 @@ class Checkout extends Factory
      * 
      * @param string $failUrl  A Web page address to redirect upon 
      *                         the transaction being rejected by asiapay
-     * @return 
+     * @return $this
      */
-    protected function setFailUrl($failUrl)
+    public function setFailUrl($failUrl)
     {
         $this->failUrl = $failUrl;
 
@@ -158,9 +272,9 @@ class Checkout extends Factory
      * 
      * @param string $cancelUrl  A Web page address to redirect upon 
      *                           the transaction being cancelled by customer
-     * @return 
+     * @return $this
      */
-    protected function setCancelUrl($cancelUrl)
+    public function setCancelUrl($cancelUrl)
     {
         $this->cancelUrl = $cancelUrl;
 
@@ -172,9 +286,9 @@ class Checkout extends Factory
      * 
      * @param string $paymentType  Payment Type
      *
-     * @return 
+     * @return $this
      */
-    protected function setPaymentType($paymentType)
+    public function setPaymentType($paymentType)
     {
         $this->paymentType = $paymentType;
 
@@ -186,9 +300,9 @@ class Checkout extends Factory
      * 
      * @param string $languange  The languange of the payment page
      *
-     * @return 
+     * @return $this
      */
-    protected function setLanguange($languange)
+    public function setLanguange($languange)
     {
         $this->languange = $languange;
 
@@ -200,9 +314,9 @@ class Checkout extends Factory
      * 
      * @param string $paymentMethod The Payment Method
      *
-     * @return 
+     * @return $this
      */
-    protected function setPaymentMethod($paymentMethod)
+    public function setPaymentMethod($paymentMethod)
     {
         $this->paymentMethod = $paymentMethod;
 

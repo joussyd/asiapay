@@ -28,6 +28,8 @@ class Factory extends Base
 {
     /* Constants
     -------------------------------*/
+    const TEST_PAYMENT_URL = 'https://test.pesopay.com/b2cDemo/eng/payment/payForm.jsp';
+    const PROD_PAYMENT_URL = 'https://www.pesopay.com/b2c2/eng/payment/payForm.jsp';
     /* Private Properties
     -------------------------------*/
     /* Get
@@ -38,27 +40,15 @@ class Factory extends Base
     -------------------------------*/
     /* Protected Properties
     -------------------------------*/
-    protected $merchantId    = null;
-    protected $amount        = null;
-    protected $orderRef      = null;
-    protected $currCode      = null;
-    protected $mpsMode       = null;
-    protected $successUrl    = null;
-    protected $failedUrl     = null;
-    protected $cancelUrl     = null;
-    protected $paymentType   = 'N';
-    protected $languange     = 'E';
-    protected $paymentMethod = 'ALL';
-    protected $secureHash    = null;
-
     /* Public Methods
     -------------------------------*/
      /**
      * Checkout Method
      *
-     * @param string $merchantId Merchant's ID
-     * @param string $live       
-     * @return Auth class
+     * @param string $merchantId       Merchant's ID
+     * @param string $secureHashSecret Hash secret provided by asiapay
+     * @param string $live             live or testing
+     * @return Checkout class
      */
     public function checkout($merchantId, $secureHashSecret, $live = false)
     {
@@ -88,8 +78,8 @@ class Factory extends Base
             'merchantReference' => $merchantReference,
             'currencyCode'      => $currencyCode,
             'amount'            => $amount,
-            'paymentType'       => $paymentMethod,
-            'secureHashSecret'  => $secureHash
+            'paymentType'       => $paymentType,
+            'secureHashSecret'  => $secureHashSecret
         );
 
         // convert array to pipe "|" delimited string
