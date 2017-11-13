@@ -1,0 +1,19 @@
+{
+    "name": "redscript/asiapay",
+    "description": "\"AsiaPay API\"",
+    "authors": [
+        {
+            "name": "Joussyd Calupig",
+            "email": "joussydmcalupig@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "^7.0",
+    },
+    "autoload": {
+        "psr-4": {
+            "Redscript\\AsiaPay\\": "src/"
+        }
+    }
+}
