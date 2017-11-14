@@ -14,6 +14,7 @@
 
 namespace Redscript\AsiaPay;
 use Redscript\AsiaPay\Checkout;
+use Redscript\AsiaPay\Order;
 
 /**
  * Factory Class
@@ -30,6 +31,8 @@ class Factory extends Base
     -------------------------------*/
     const TEST_PAYMENT_URL = 'https://test.pesopay.com/b2cDemo/eng/payment/payForm.jsp';
     const PROD_PAYMENT_URL = 'https://www.pesopay.com/b2c2/eng/payment/payForm.jsp';
+    const API_TEST_URL     = 'https://test.pesopay.com/b2cDemo/eng/merchant/api/orderApi.jsp';
+    const API_PROD_URL     = 'https://www.pesopay.com/b2c2/eng/merchant/api/orderApi.jsp';
     /* Private Properties
     -------------------------------*/
     /* Get
@@ -89,5 +92,49 @@ class Factory extends Base
         $secureHash = sha1($signingData);
 
         return $secureHash;
+    }
+
+    /**
+     * 
+     * @param string $merchantId    The Merchant ID
+     * @param string $loginId       api login id provided by asiapay
+     * @param string $password      api password provided by asiapay
+     * @param string $payRef        Payment Reference from the datafeed
+     * @param string $amount        Transaction Amount
+     * @return Order class
+     */
+    public function order($merchantId, $loginId, $password, $payRef, $amount)
+    {
+        return new Order($merchantId, $loginId, $password, $payRef, $amount);
+    }
+
+    /**
+     * Send Curl Request
+     *
+     * @param  array $settings The request's URL,Post Data and or Http Header
+     * @return json
+     */
+    public function sendRequest($settings)
+    {
+        // initiate  request
+        $curl = curl_init($settings['url']);
+
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_ENCODING, '');
+        curl_setopt($curl, CURLOPT_MAXREDIRS,10);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 30);
+        curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $settings['postData']);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $settings['httpHeader']);
+
+        // send request then decode the returned json string
+        $response = curl_exec($curl);
+
+        // close the connection
+        curl_close($curl);
+
+        return $response; 
     }
 }
